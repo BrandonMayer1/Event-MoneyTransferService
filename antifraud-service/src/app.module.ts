@@ -1,10 +1,9 @@
+// src/anti-fraud/anti-fraud.module.ts
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AntiFraudService } from './antifraud.service';
+import { KafkaService } from './kafka/kafka.service';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  providers: [AntiFraudService, KafkaService],
 })
 export class AppModule {}

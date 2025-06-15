@@ -1,28 +1,25 @@
-// src/kafka/kafka.service.ts
-import { Injectable, OnModuleInit} from '@nestjs/common';
-import { Kafka, Producer, Consumer } from 'kafkajs';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Kafka, Producer, Consumer,} from 'kafkajs';
 
 @Injectable()
 export class KafkaService implements OnModuleInit{
   private kafka: Kafka;
   private producer: Producer;
   private consumer: Consumer;
-
-
-//Makes a consumer and a producer
+  private readonly logger = new Logger(KafkaService.name);
+//makes the producer and consumers
   constructor() {
     this.kafka = new Kafka({
-      clientId: 'service',  // Unique client ID
+      clientId: 'service',
       brokers: ['localhost:9092'],
     });
     this.producer = this.kafka.producer();
     this.consumer = this.kafka.consumer({ 
-      groupId: 'approval-consumer'  // For status updates
+      groupId: 'anti-fraud-group'  // For status updates
     });
   }
-//When the module starts it connects to both the conusmer and producer
+//connects to consumer/producer on connections
   async onModuleInit() {
-
     await this.producer.connect();
     await this.consumer.connect();
   }
@@ -30,11 +27,15 @@ export class KafkaService implements OnModuleInit{
   async emit(topic: string, message: any) {
     await this.producer.send({
       topic,
-      messages: [{ value: JSON.stringify(message) }],
+      messages: [{ 
+        key: message.id, 
+        value: JSON.stringify(message) 
+      }],
     });
   }
-//Subscribes to kafka
+//Subscribes to topic 
   async subscribe(topic: string, callback: (message: any) => void) {
+    this.logger.log(`Subscribing to topic: ${topic}`);
     if (!this.consumer) {
       throw new Error('Consumer not initialized');
     }
@@ -46,6 +47,7 @@ export class KafkaService implements OnModuleInit{
           if(message.value != null)
           callback(JSON.parse(message.value.toString()));
         } catch (err) {
+          this.logger.error(`Error processing message from ${topic}`, err);
         }
       },
     });
