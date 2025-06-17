@@ -1,9 +1,9 @@
 // src/kafka/kafka.service.ts
-import { Injectable, OnModuleInit} from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Kafka, Producer, Consumer } from 'kafkajs';
 
 @Injectable()
-export class KafkaService implements OnModuleInit{
+export class KafkaService implements OnModuleInit, OnModuleDestroy {
   private kafka: Kafka;
   private producer: Producer;
   private consumer: Consumer;
@@ -49,5 +49,14 @@ export class KafkaService implements OnModuleInit{
         }
       },
     });
+  }
+
+  async onModuleDestroy() {
+    try {
+      await this.consumer?.disconnect();
+      await this.producer?.disconnect();
+    } catch (error) {
+      console.error('Error disconnecting Kafka client:', error);
+    }
   }
 }

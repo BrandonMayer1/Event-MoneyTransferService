@@ -31,4 +31,9 @@ export class AntiFraudService implements OnModuleInit {
       processedAt: new Date().toISOString()
     });
   }
+
+  async onModuleDestroy() {
+    this.logger.log('Cleaning up transaction service...');
+    // The Kafka consumer will be automatically disconnected by the KafkaService
+  }
 }

@@ -1,10 +1,10 @@
 // src/transaction/transaction.service.ts
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { KafkaService } from './kafka/kafka.service';
 
 @Injectable()
-export class TransactionService {
+export class TransactionService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TransactionService.name);
 
   constructor(
@@ -18,6 +18,8 @@ export class TransactionService {
       this.updateStatus.bind(this) 
     );
   }
+
+  
   //Update status which updates in Supabase
   private async updateStatus(transaction: { 
     id: string; 
@@ -56,5 +58,10 @@ export class TransactionService {
       [status, id]
     );
     return updated;
+  }
+
+  async onModuleDestroy() {
+    this.logger.log('Cleaning up transaction service...');
+    // The Kafka consumer will be automatically disconnected by the KafkaService
   }
 }
