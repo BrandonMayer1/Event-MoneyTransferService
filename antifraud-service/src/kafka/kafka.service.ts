@@ -1,12 +1,14 @@
-import { Injectable, OnModuleInit,OnModuleDestroy, Logger } from '@nestjs/common';
-import { Kafka, Producer, Consumer,} from 'kafkajs';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { Kafka, Producer, Consumer } from 'kafkajs';
 
 @Injectable()
-export class KafkaService implements OnModuleInit{
+export class KafkaService implements OnModuleInit, OnModuleDestroy {
   private kafka: Kafka;
   private producer: Producer;
   private consumer: Consumer;
   private readonly logger = new Logger(KafkaService.name);
+
+  
 //makes the producer and consumers
   constructor() {
     this.kafka = new Kafka({
@@ -18,11 +20,15 @@ export class KafkaService implements OnModuleInit{
       groupId: 'anti-fraud-group'  // For status updates
     });
   }
+
+
 //connects to consumer/producer on connections
   async onModuleInit() {
     await this.producer.connect();
     await this.consumer.connect();
   }
+
+
 //Emits to Kafka
   async emit(topic: string, message: any) {
     await this.producer.send({
@@ -33,6 +39,8 @@ export class KafkaService implements OnModuleInit{
       }],
     });
   }
+
+
 //Subscribes to topic 
   async subscribe(topic: string, callback: (message: any) => void) {
     this.logger.log(`Subscribing to topic: ${topic}`);
