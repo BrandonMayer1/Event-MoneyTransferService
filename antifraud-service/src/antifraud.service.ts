@@ -11,14 +11,14 @@ export class AntiFraudService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     this.logger.log('Connecting to Kafka...');
-    await this.kafkaClient.connect();
-    this.logger.log('Subscribing to transaction.created topic...');
-    this.kafkaClient.subscribeToResponseOf('transaction.created');
+    //await this.kafkaClient.connect();
+   // this.logger.log('Subscribing to transaction.created topic...');
+    //this.kafkaClient.subscribeToResponseOf('transaction.created');
   }
 
   @MessagePattern('transaction.created')
   async validateTransaction(@Payload() message: any) {
-    this.logger.log(`✅ Received transaction: ${JSON.stringify(message)}`);
+    this.logger.log(`Received transaction: ${JSON.stringify(message)}`);
 
     const transaction = message.value || message;
     const status = transaction.value < 1000 ? 'approved' : 'rejected';

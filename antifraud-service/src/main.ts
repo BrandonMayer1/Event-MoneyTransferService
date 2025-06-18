@@ -12,6 +12,7 @@ async function bootstrap() {
       options: {
         client: {
           clientId: 'antifraud-service',
+          logLevel: 5,
           brokers: ['localhost:9092'],
         },
         consumer: {
