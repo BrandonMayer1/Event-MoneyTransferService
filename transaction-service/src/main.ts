@@ -1,9 +1,33 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import 'dotenv/config';
+import { Logger } from '@nestjs/common';
+import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(3000);
+    app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.KAFKA,
+    options: {
+      client: {
+        brokers: ['localhost:9092'],
+        clientId: 'transaction-service',
+      },
+      consumer: {
+        groupId: 'transaction-service-group',
+      },
+      producer: {
+        allowAutoTopicCreation: true,
+      },
+      subscribe: {
+        fromBeginning: true,
+      }
+    },
+  });
+
+  await app.startAllMicroservices();
+  await app.listen(3001);
+  
+  const logger = new Logger('TransactionService');
+  logger.log('Transaction service is running on port 3001');
 }
 bootstrap();

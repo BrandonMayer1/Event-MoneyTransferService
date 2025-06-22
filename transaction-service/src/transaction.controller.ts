@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Patch, Param } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
+import { EventPattern, Payload } from '@nestjs/microservices';
 
 @Controller('transactions')
 export class TransactionController {
@@ -10,8 +11,9 @@ export class TransactionController {
     return this.service.createTransaction(body);
   }
 
-  @Patch(':id/status')
-  updateStatus(@Param('id') id: string, @Body('status') status: string) {
-    return this.service.updateTransactionStatus(id, status);
+  @EventPattern('transaction.updated')
+  updateStatus(@Payload() data: { id: string; status: string }) {
+    return this.service.updateTransactionStatus(data.id, data.status);
   }
+
 }
