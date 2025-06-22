@@ -25,9 +25,9 @@ async function bootstrap() {
   });
 
   await app.startAllMicroservices();
-  await app.listen(3001);
+  await app.listen(3000);
   
   const logger = new Logger('TransactionService');
-  logger.log('Transaction service is running on port 3001');
+  logger.log('Transaction service is running on port 3000');
 }
 bootstrap();

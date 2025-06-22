@@ -1,11 +1,33 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common';
+import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
-  await app.listen(3001); // Different port than transaction service
-  logger.log('Antifraud service is listening on port 3001...');
+    app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.KAFKA,
+    options: {
+      client: {
+        brokers: ['localhost:9092'],
+        clientId: 'antifraud-service',
+      },
+      consumer: {
+        groupId: 'antifraud-service-group',
+      },
+      producer: {
+        allowAutoTopicCreation: true,
+      },
+      subscribe: {
+        fromBeginning: true,
+      }
+    },
+  });
+
+  await app.startAllMicroservices();
+  await app.listen(3001);
+  
+  const logger = new Logger('AntiFraudService');
+  logger.log('AntiFraud service is running on port 3001');
 }
 bootstrap();

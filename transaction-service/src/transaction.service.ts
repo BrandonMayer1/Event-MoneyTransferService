@@ -1,10 +1,10 @@
-// src/transaction/transaction.service.ts
 import { DataSource } from 'typeorm';
-import { Injectable, OnModuleInit, Logger, Inject, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Inject, InternalServerErrorException } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
+import { stat } from 'fs';
 
 @Injectable()
-export class TransactionService implements OnModuleInit{
+export class TransactionService implements OnModuleInit, OnModuleDestroy{
   private readonly logger = new Logger(TransactionService.name,);
 
   constructor(
@@ -23,17 +23,7 @@ export class TransactionService implements OnModuleInit{
   }
   
 
-  //Update status which updates in Supabase
-  private async updateStatus(transaction: { 
-    id: string; 
-    status: string 
-  }) {
-    this.logger.log('Transaction update recieved');
-    await this.updateTransactionStatus(transaction.id, transaction.status);
-  }
-
-
-//Creats transaction in the Supabase while also emitting to Kafka on transaction.created
+  //Creats transaction in the Supabase while also emitting to Kafka on transaction.created
   async createTransaction(data: {accountexternaldebit: string; accountexternalcredit: string; transfertypeid: number; value: number;}) {
     const { accountexternaldebit, accountexternalcredit, transfertypeid, value } = data;
 
@@ -47,12 +37,16 @@ export class TransactionService implements OnModuleInit{
 
       const transaction = result[0];
 
-      await this.clientKafka.emit('transaction.created', {
+      const kafkaData = {
         id: transaction.id,
         accountExternalDebit: accountexternaldebit,
         accountExternalCredit: accountexternalcredit,
         value,
-      });
+      };
+
+      this.logger.log(`Sending to Kafka: ${JSON.stringify(kafkaData)}`);
+      
+      await this.clientKafka.emit('transaction', [transaction.id, accountexternaldebit, accountexternalcredit, value]);
 
       this.logger.log('Transaction created and sent to Kafka');
       return transaction;
@@ -69,12 +63,18 @@ export class TransactionService implements OnModuleInit{
       `UPDATE transactions SET status = $1 WHERE id = $2 RETURNING *`,
       [status, id]
     );
+    this.logger.log(`Transaction ${id} update logged and updated as ${status} in database`);
     return updated;
   }
 
 
   async onModuleDestroy() {
     this.logger.log('Cleaning up transaction service...');
-    // The Kafka consumer will be automatically disconnected by the KafkaService
+    try {
+      await this.clientKafka.close();
+      this.logger.log('Kafka client disconnected successfully');
+    } catch (error) {
+      this.logger.error('Error disconnecting Kafka client:', error);
+    }
   }
 }

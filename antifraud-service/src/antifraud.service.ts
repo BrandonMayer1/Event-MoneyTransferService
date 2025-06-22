@@ -1,31 +1,37 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { KafkaService } from './kafka/kafka.service';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Inject } from '@nestjs/common';
+import { ClientKafka } from '@nestjs/microservices';
 import { GeminiService } from './gemini/gemini.service';
 
 @Injectable()
-export class AntiFraudService implements OnModuleInit {
+export class AntiFraudService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(AntiFraudService.name);
 
   constructor(
-    private readonly kafkaService: KafkaService,
+    @Inject('TRANSACTION_KAFKA_CLIENT') private readonly clientKafka: ClientKafka,
     private readonly geminiService: GeminiService
   ) {}
 
 
-//Subscribes to transaction.created
   async onModuleInit() {
-    await this.kafkaService.subscribe(
-      'transaction.created',
-      this.validateTransaction.bind(this) 
-    );
+    try {
+      await this.clientKafka.connect();
+      this.logger.log('Connected to Kafka');
+    } catch (error) {
+      this.logger.error('Failed to connect to Kafka:', error);
+      throw error;
+    }
   }
 
 
   //Validates transaction
-  private async validateTransaction(transaction: { 
+  async validateTransaction(transaction: { 
     id: string; 
+    accountExternalDebit: string;
+    accountExternalCredit: string;
     value: number 
   }) {
+    console.log('AntiFraud Service received transaction:', JSON.stringify(transaction));
+    
     const isUnderThousand = await this.geminiService.checkUnderThousand(transaction.value);
     const status = isUnderThousand ? 'REJECTED' : 'APPROVED'; //Checker VIA AI if over 1000
     
@@ -33,15 +39,19 @@ export class AntiFraudService implements OnModuleInit {
       `Transaction ${transaction.id} validated: ${status} (Value: ${transaction.value})`
     );
 
-    await this.kafkaService.emit('transaction.status.updated', {
+    await this.clientKafka.emit('transaction.updated', {
       id: transaction.id,
-      status,
-      processedAt: new Date().toISOString()
+      status
     });
   }
 
   async onModuleDestroy() {
-    this.logger.log('Cleaning up transaction service...');
-    // The Kafka consumer will be automatically disconnected by the KafkaService
+    this.logger.log('Cleaning up antifraud service...');
+    try {
+      await this.clientKafka.close();
+      this.logger.log('Kafka client disconnected successfully');
+    } catch (error) {
+      this.logger.error('Error disconnecting Kafka client:', error);
+    }
   }
 }
