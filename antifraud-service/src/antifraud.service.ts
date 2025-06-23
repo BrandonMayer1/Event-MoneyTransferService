@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Inject } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
+import { DataSource } from 'typeorm';
 import { GeminiService } from './gemini/gemini.service';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class AntiFraudService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     @Inject('TRANSACTION_KAFKA_CLIENT') private readonly clientKafka: ClientKafka,
+    private readonly dataSource: DataSource,
     private readonly geminiService: GeminiService
   ) {}
 
@@ -28,15 +30,34 @@ export class AntiFraudService implements OnModuleInit, OnModuleDestroy {
     id: string; 
     accountExternalDebit: string;
     accountExternalCredit: string;
-    value: number 
+    value: number;
+    user_id: string;
   }) {
+    //Gets all users transactions
     console.log('AntiFraud Service received transaction:', JSON.stringify(transaction));
-    
-    const isUnderThousand = await this.geminiService.checkUnderThousand(transaction.value);
-    const status = isUnderThousand ? 'REJECTED' : 'APPROVED'; //Checker VIA AI if over 1000
+    const result = await this.dataSource.query(
+      `SELECT id, accountexternaldebit, accountexternalcredit, transfertypeid, value, status, created_at
+       FROM transactions
+       WHERE user_id = $1
+       ORDER BY created_at DESC`,
+      [transaction.user_id]
+    );
+
+    const formattedTransactions = result.map(tx => ({
+      id: tx.id,
+      from: tx.accountexternaldebit,
+      to: tx.accountexternalcredit,
+      transferTypeId: tx.transfertypeid,
+      amount: tx.value,
+      status: tx.status,
+      date: new Date(tx.created_at).toLocaleString(),
+    }));
+
+    const isFlagged = await this.geminiService.antiFraudChecker(transaction.id, transaction.value, formattedTransactions);
+    const status = isFlagged ? 'REJECTED' : 'APPROVED'; 
     
     this.logger.log(
-      `Transaction ${transaction.id} validated: ${status} (Value: ${transaction.value})`
+      `Transaction ${transaction.id} for user ${transaction.user_id} validated: ${status} (Value: ${transaction.value})`
     );
 
     await this.clientKafka.emit('transaction.updated', {

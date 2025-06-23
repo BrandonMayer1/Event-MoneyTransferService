@@ -24,15 +24,15 @@ export class TransactionService implements OnModuleInit, OnModuleDestroy{
   
 
   //Creats transaction in the Supabase while also emitting to Kafka on transaction.created
-  async createTransaction(data: {accountexternaldebit: string; accountexternalcredit: string; transfertypeid: number; value: number;}) {
-    const { accountexternaldebit, accountexternalcredit, transfertypeid, value } = data;
+  async createTransaction(data: {accountexternaldebit: string; accountexternalcredit: string; transfertypeid: number; value: number; user_id: string;}) {
+    const { accountexternaldebit, accountexternalcredit, transfertypeid, value, user_id } = data;
 
     try {
       const result = await this.dataSource.query(
-        `INSERT INTO transactions (accountexternaldebit, accountexternalcredit, transfertypeid, value, status)
-         VALUES ($1, $2, $3, $4, 'pending')
+        `INSERT INTO transactions (accountexternaldebit, accountexternalcredit, transfertypeid, value, status, user_id, created_at)
+         VALUES ($1, $2, $3, $4, 'pending', $5, NOW())
          RETURNING *`,
-        [accountexternaldebit, accountexternalcredit, transfertypeid, value]
+        [accountexternaldebit, accountexternalcredit, transfertypeid, value, user_id]
       );
 
       const transaction = result[0];
@@ -42,11 +42,12 @@ export class TransactionService implements OnModuleInit, OnModuleDestroy{
         accountExternalDebit: accountexternaldebit,
         accountExternalCredit: accountexternalcredit,
         value,
+        user_id,
       };
 
       this.logger.log(`Sending to Kafka: ${JSON.stringify(kafkaData)}`);
       
-      await this.clientKafka.emit('transaction', [transaction.id, accountexternaldebit, accountexternalcredit, value]);
+      await this.clientKafka.emit('transaction', [transaction.id, accountexternaldebit, accountexternalcredit, value, user_id]);
 
       this.logger.log('Transaction created and sent to Kafka');
       return transaction;

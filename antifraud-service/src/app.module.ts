@@ -4,11 +4,13 @@ import { GeminiModule } from './gemini/gemini.module';
 import { ConfigModule } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AntiFraudController } from './antifraud.controller';
+import { DatabaseModule } from './database.module';
 
 @Module({
   imports: [
     GeminiModule, 
     ConfigModule.forRoot({isGlobal:true}),
+    DatabaseModule,
     ClientsModule.register([
       {
         name: 'TRANSACTION_KAFKA_CLIENT',
