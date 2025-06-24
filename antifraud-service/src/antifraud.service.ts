@@ -42,20 +42,20 @@ export class AntiFraudService implements OnModuleInit, OnModuleDestroy {
        ORDER BY created_at DESC`,
       [transaction.user_id]
     );
-
-    const formattedTransactions = result.map(tx => ({
-      id: tx.id,
-      from: tx.accountexternaldebit,
-      to: tx.accountexternalcredit,
-      transferTypeId: tx.transfertypeid,
-      amount: tx.value,
-      status: tx.status,
-      date: new Date(tx.created_at).toLocaleString(),
-    }));
-
-    const isFlagged = await this.geminiService.antiFraudChecker(transaction.id, transaction.value, formattedTransactions);
+    const incomingTransaction = `User ${transaction.user_id} transferred $${transaction.value} with accounts ${transaction.accountExternalDebit} and ${transaction.accountExternalCredit}`;
+    const isFlagged = await this.geminiService.antiFraudChecker(incomingTransaction);
     const status = isFlagged ? 'REJECTED' : 'APPROVED'; 
-    
+
+    //add to vectorized DB
+    await this.geminiService.addTransactionToVectorDB(incomingTransaction, {
+      user_id: transaction.user_id,
+      accountexternaldebit: transaction.accountExternalDebit,
+      accountexternalcredit: transaction.accountExternalCredit,
+      value: transaction.value,
+      status,
+      original: incomingTransaction,
+    });
+
     this.logger.log(
       `Transaction ${transaction.id} for user ${transaction.user_id} validated: ${status} (Value: ${transaction.value})`
     );
