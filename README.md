@@ -1,4 +1,5 @@
 Open Desktop Docker Run Transaction service
+Open qdrant service on Desktop Docker
 
 Open two consoles run on anti-fraud and transaction service
 npm run on both
