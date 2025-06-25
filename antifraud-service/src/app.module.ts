@@ -5,12 +5,14 @@ import { ConfigModule } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AntiFraudController } from './antifraud.controller';
 import { DatabaseModule } from './database.module';
+import { VectorDBModule } from './qdrant/vector-db.module';
 
 @Module({
   imports: [
     GeminiModule, 
     ConfigModule.forRoot({isGlobal:true}),
     DatabaseModule,
+    VectorDBModule,
     ClientsModule.register([
       {
         name: 'TRANSACTION_KAFKA_CLIENT',
