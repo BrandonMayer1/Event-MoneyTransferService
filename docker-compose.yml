@@ -1,14 +1,47 @@
-version: "3.8"
-
 services:
+  redpanda:
+    image: redpandadata/redpanda:latest
+    user: redpanda
+    ports:
+      - "9092:9092"   # Kafka
+      - "9644:9644"   # Admin API
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    restart: "no"
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - 1G
+      - --reserve-memory
+      - 0M
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - PLAINTEXT://localhost:9092
+      - --rpc-addr
+      - 0.0.0.0:33145
+      - --advertise-rpc-addr
+      - 127.0.0.1:33145
+
   qdrant:
     image: qdrant/qdrant:latest
-    container_name: qdrant
     ports:
-      - "6333:6333"  # Qdrant API port
+      - "6333:6333"   # REST
+      - "6334:6334"   # gRPC
     volumes:
-      - qdrant_storage:/qdrant/storage
-    restart: unless-stopped
+      - qdrant-data:/qdrant/storage
+    restart: "no"
+    # if your app starts immediately and depends on Qdrant, you can add:
+    # healthcheck:
+    #   test: ["CMD", "wget", "-qO-", "http://localhost:6333/collections"]  # simple readiness probe
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
 
 volumes:
-  qdrant_storage:
+  redpanda-data:
+  qdrant-data:
