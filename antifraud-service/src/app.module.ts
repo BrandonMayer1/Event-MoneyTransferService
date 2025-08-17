@@ -19,7 +19,7 @@ import { VectorDBModule } from './qdrant/vector-db.module';
         transport: Transport.KAFKA,
         options: {
           client: {
-            brokers: ['localhost:9092'],
+            brokers: ['kafka:9092'],
           },
           producer: {
             allowAutoTopicCreation: true,

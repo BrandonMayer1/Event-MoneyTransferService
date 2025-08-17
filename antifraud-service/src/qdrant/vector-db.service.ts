@@ -8,7 +8,7 @@ export class VectorDBService implements OnModuleInit {
   private readonly collection = 'transactions';
 
   constructor() {
-    this.client = new QdrantClient({ url: 'http://localhost:6333' });
+    this.client = new QdrantClient({ url: 'http://qdrant-event:6333' });
   }
 
   async onModuleInit() {

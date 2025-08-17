@@ -16,36 +16,24 @@ A practice app demonstrating Kafka Event-Driven Architecture with two services: 
 ## Prerequisites
 
 - Docker Desktop (for running services)
-- Redpanda Service (Via Docker)
-- Qdrant service (via Docker)
+- Google Gemini Api Keys
 - Supabase account and credentials
 - Node.js and npm
+- Create .env in both services w/ 
+DATABASE_URL= (Supabase Url)
+API_KEY = (Google console API key w/ Gemini Enabled)
 
 ## Setup & Run Instructions
 
 1. **Start Required Services:**
-   - Open Docker Desktop and start the Transaction Service container.
-   - Start the Qdrant service container.
+docker compose build
+docker compose up 
+docker compose ps
 
-2. **Install Dependencies:**
-   - Open two terminal windows:
-     - One for the AntiFraud Service
-     - One for the Transaction Service
-   - In each service directory, run:
-     ```bash
-     npm install
-     ```
-
-3. **Run Both Services:**
-   - In each terminal, start the service:
-     ```bash
-     npm start
-     ```
-
-4. **Test the API:**
+2. **Test the API:**
    - Use Postman (or similar) to send a POST request to the Transaction Service:
      ```
-     POST http://localhost:3000/transactions
+     POST http://127.0.0.1:3000/transactions
      Content-Type: application/json
      ```
      Example JSON body:

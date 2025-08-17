@@ -12,7 +12,7 @@ import { TransactionService } from './transaction.service';
         transport: Transport.KAFKA,
         options: {
           client: {
-            brokers: ['localhost:9092'],
+            brokers: ['kafka:9092'],
           },
           producer: {
             allowAutoTopicCreation: true,

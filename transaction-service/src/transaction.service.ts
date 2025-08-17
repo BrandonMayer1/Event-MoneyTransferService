@@ -1,7 +1,6 @@
 import { DataSource } from 'typeorm';
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Inject, InternalServerErrorException } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
-import { stat } from 'fs';
 
 @Injectable()
 export class TransactionService implements OnModuleInit, OnModuleDestroy{

@@ -35,13 +35,6 @@ export class AntiFraudService implements OnModuleInit, OnModuleDestroy {
   }) {
     //Gets all users transactions
     console.log('AntiFraud Service received transaction:', JSON.stringify(transaction));
-    const result = await this.dataSource.query(
-      `SELECT id, accountexternaldebit, accountexternalcredit, transfertypeid, value, status, created_at
-       FROM transactions
-       WHERE user_id = $1
-       ORDER BY created_at DESC`,
-      [transaction.user_id]
-    );
     const incomingTransaction = `User ${transaction.user_id} transferred $${transaction.value} with accounts ${transaction.accountExternalDebit} and ${transaction.accountExternalCredit}`;
     const isFlagged = await this.geminiService.antiFraudChecker(incomingTransaction);
     const status = isFlagged ? 'REJECTED' : 'APPROVED'; 
